@@ -1,0 +1,55 @@
+const supabase = require("../utils/db");
+const s3 = require("../utils/r2Client");
+
+const getReels = async (req, res) => {
+    const { data, error } = await supabase.from("reels").select("*");
+    if (error) return res.status(500).json({ message: error.message });
+    res.json(data);
+};
+
+const uploadReel = async (req, res) => {
+    try {
+        const { title, fileBase64, fileName, userId } = req.body;
+        const buffer = Buffer.from(fileBase64, "base64");
+
+        await s3.putObject({
+            Bucket: "reels-videos",
+            Key: fileName,
+            Body: buffer,
+            ContentType: "video/mp4",
+        }).promise();
+
+        const url = `https://<R2_CDN_URL>/${fileName}`;
+
+        const { data, error } = await supabase
+            .from("reels")
+            .insert([{ title, url, user_id: userId }]);
+
+        if (error) return res.status(500).json({ message: error.message });
+        res.status(201).json(data[0]);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Like a reel
+const likeReel = async (req, res) => {
+    const { reelId, userId } = req.body;
+    const { data, error } = await supabase
+        .from("likes")
+        .insert([{ reel_id: reelId, user_id: userId }]);
+    if (error) return res.status(500).json({ message: error.message });
+    res.json({ message: "Liked" });
+};
+
+// Comment on a reel
+const commentReel = async (req, res) => {
+    const { reelId, userId, comment } = req.body;
+    const { data, error } = await supabase
+        .from("comments")
+        .insert([{ reel_id: reelId, user_id: userId, comment }]);
+    if (error) return res.status(500).json({ message: error.message });
+    res.json({ message: "Comment added" });
+};
+
+module.exports = { getReels, uploadReel, likeReel, commentReel };
