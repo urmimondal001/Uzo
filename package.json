@@ -1,7 +1,8 @@
+
 {
   "name": "reels-app",
   "version": "1.0.0",
-  "description": "Backend for Reels App",
+  "description": "Reels App Backend with Auth & Interaction",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,7 +13,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "@supabase/supabase-js": "^2.25.0",
-    "aws-sdk": "^2.1527.0"
+    "aws-sdk": "^2.1527.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
