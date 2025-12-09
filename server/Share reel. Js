@@ -1,0 +1,43 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase Config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL_HERE",
+  "YOUR_SUPABASE_ANON_KEY_HERE"
+);
+
+// ----------------------------
+// GET SHARE LINK FOR A REEL
+// ----------------------------
+router.get("/share/:reel_id", async (req, res) => {
+  try {
+    const { reel_id } = req.params;
+
+    // Fetch the reel info
+    const { data: reel, error } = await supabase
+      .from("reels")
+      .select("id, video_url, posted_by")
+      .eq("id", reel_id)
+      .single();
+
+    if (error || !reel) return res.status(404).json({ status: false, message: "Reel not found" });
+
+    // Return reel URL (Front-end will handle sharing)
+    res.json({
+      status: true,
+      message: "Reel ready for sharing",
+      reel: {
+        id: reel.id,
+        video_url: reel.video_url,
+        posted_by: reel.posted_by
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error", error: err.message });
+  }
+});
+
+export default router;
