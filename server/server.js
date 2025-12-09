@@ -11,7 +11,8 @@ import commentRoute from "./routes/comment-reel.js";
 import deleteReelRoute from "./routes/delete-reel.js";
 import followRoute from "./routes/follow.js";
 import shareReelRoute from "./routes/share-reel.js";
-import uploadReelRoute from "./routes/upload-reel.js"; // <-- New
+import uploadReelRoute from "./routes/upload-reel.js";
+import generateReelIdRoute from "./routes/generate-reel-id.js"; // <-- New
 
 const app = express();
 
@@ -29,7 +30,8 @@ app.use("/api", commentRoute);
 app.use("/api", deleteReelRoute);
 app.use("/api", followRoute);
 app.use("/api", shareReelRoute);
-app.use("/api", uploadReelRoute); // <-- New
+app.use("/api", uploadReelRoute);
+app.use("/api", generateReelIdRoute); // <-- New
 
 // Default
 app.get("/", (req, res) => {
