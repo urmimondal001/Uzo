@@ -1,0 +1,74 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+router.post("/like", async (req, res) => {
+  try {
+    const { user_id, reels_id } = req.body;
+
+    if (!user_id || !reels_id) {
+      return res.status(400).json({
+        status: false,
+        message: "user_id and reels_id are required",
+      });
+    }
+
+    // 1) Check if already liked
+    const { data: existing, error: existingError } = await supabase
+      .from("reels_likes")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("reels_id", reels_id)
+      .single();
+
+    if (existing) {
+      return res.status(400).json({
+        status: false,
+        message: "Already liked",
+      });
+    }
+
+    // 2) Add like record
+    const { error: insertError } = await supabase
+      .from("reels_likes")
+      .insert([{ user_id, reels_id }]);
+
+    if (insertError) {
+      return res.status(500).json({
+        status: false,
+        message: insertError.message,
+      });
+    }
+
+    // 3) Increase like_count by +1
+    const { error: updateError } = await supabase
+      .rpc("increment_like", { reelid: reels_id });
+
+    if (updateError) {
+      return res.status(500).json({
+        status: false,
+        message: updateError.message,
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Like added successfully",
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      status: false,
+      message: "Server Error",
+      error: err.message,
+    });
+  }
+});
+
+export default router;
