@@ -8,6 +8,7 @@ import forgotPasswordRoute from "./routes/forgot-password.js";
 import likeRoute from "./routes/like-reel.js";
 import viewRoute from "./routes/view-reel.js";
 import commentRoute from "./routes/comment-reel.js";
+import deleteReelRoute from "./routes/delete-reel.js"; // << NEW
 
 const app = express();
 
@@ -16,12 +17,13 @@ app.use(cors());
 app.use(express.json());
 
 // API Routes
-app.use("/api", signupRoute);
-app.use("/api", loginRoute);
-app.use("/api", forgotPasswordRoute);
-app.use("/api", likeRoute);
-app.use("/api", viewRoute);
-app.use("/api", commentRoute);
+app.use("/api", signupRoute);         // Sign Up
+app.use("/api", loginRoute);          // Log In
+app.use("/api", forgotPasswordRoute); // Forgot Password
+app.use("/api", likeRoute);           // Like System
+app.use("/api", viewRoute);           // View System
+app.use("/api", commentRoute);        // Comment System
+app.use("/api", deleteReelRoute);     // Delete Reel << NEW
 
 // Default
 app.get("/", (req, res) => {
