@@ -1,0 +1,90 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase Config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL_HERE",
+  "YOUR_SUPABASE_ANON_KEY_HERE"
+);
+
+// ----------------------------
+// FOLLOW USER
+// ----------------------------
+router.post("/follow", async (req, res) => {
+  const { follower_id, following_id } = req.body;
+
+  if (!follower_id || !following_id)
+    return res.status(400).json({ status: false, message: "Both follower_id and following_id required" });
+
+  // Check if already following
+  const { data: exists } = await supabase
+    .from("followers")
+    .select("*")
+    .eq("follower_id", follower_id)
+    .eq("following_id", following_id)
+    .single();
+
+  if (exists) return res.json({ status: false, message: "Already following" });
+
+  // Insert follow record
+  const { error } = await supabase.from("followers").insert([{ follower_id, following_id }]);
+  if (error) return res.status(400).json({ status: false, message: error.message });
+
+  res.json({ status: true, message: "Followed successfully" });
+});
+
+// ----------------------------
+// UNFOLLOW USER
+// ----------------------------
+router.post("/unfollow", async (req, res) => {
+  const { follower_id, following_id } = req.body;
+
+  if (!follower_id || !following_id)
+    return res.status(400).json({ status: false, message: "Both follower_id and following_id required" });
+
+  const { error } = await supabase
+    .from("followers")
+    .delete()
+    .eq("follower_id", follower_id)
+    .eq("following_id", following_id);
+
+  if (error) return res.status(400).json({ status: false, message: error.message });
+
+  res.json({ status: true, message: "Unfollowed successfully" });
+});
+
+// ----------------------------
+// GET FOLLOWERS OF A USER
+// ----------------------------
+router.get("/followers/:user_id", async (req, res) => {
+  const { user_id } = req.params;
+
+  const { data, error } = await supabase
+    .from("followers")
+    .select("follower_id")
+    .eq("following_id", user_id);
+
+  if (error) return res.status(400).json({ status: false, message: error.message });
+
+  res.json({ status: true, followers: data });
+});
+
+// ----------------------------
+// GET FOLLOWING OF A USER
+// ----------------------------
+router.get("/following/:user_id", async (req, res) => {
+  const { user_id } = req.params;
+
+  const { data, error } = await supabase
+    .from("followers")
+    .select("following_id")
+    .eq("follower_id", user_id);
+
+  if (error) return res.status(400).json({ status: false, message: error.message });
+
+  res.json({ status: true, following: data });
+});
+
+export default router;
