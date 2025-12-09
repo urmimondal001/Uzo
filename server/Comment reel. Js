@@ -1,0 +1,38 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+const supabase = createClient(
+  "YOUR_SUPABASE_URL_HERE",
+  "YOUR_SUPABASE_ANON_KEY_HERE"
+);
+
+router.post("/comment", async (req, res) => {
+  const { user_id, reel_id, comment_text } = req.body;
+
+  if (!user_id || !reel_id || !comment_text)
+    return res.status(400).json({ status: false, message: "All fields required" });
+
+  const { error } = await supabase.from("comments").insert([{ user_id, reel_id, comment_text }]);
+
+  if (error) return res.status(400).json({ status: false, message: error.message });
+
+  res.json({ status: true, message: "Comment added successfully" });
+});
+
+router.get("/comments/:reel_id", async (req, res) => {
+  const { reel_id } = req.params;
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select("*")
+    .eq("reel_id", reel_id)
+    .order("created_at", { ascending: true });
+
+  if (error) return res.status(400).json({ status: false, message: error.message });
+
+  res.json({ status: true, comments: data });
+});
+
+export default router;
