@@ -1,27 +1,34 @@
 import express from "express";
 import cors from "cors";
 
-import signupRoute from "./sign-up.js";
-import loginRoute from "./login.js";
-import forgotPasswordRoute from "./forgot-password.js";
-import likeRoute from "./like-reel.js";
-import viewRoute from "./view-reel.js";   // << NEW
+// Import Routes
+import signupRoute from "./routes/sign-up.js";
+import loginRoute from "./routes/login.js";
+import forgotPasswordRoute from "./routes/forgot-password.js";
+import likeRoute from "./routes/like-reel.js";
+import viewRoute from "./routes/view-reel.js";
+import commentRoute from "./routes/comment-reel.js";
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// API Routes
 app.use("/api", signupRoute);
 app.use("/api", loginRoute);
 app.use("/api", forgotPasswordRoute);
 app.use("/api", likeRoute);
-app.use("/api", viewRoute); // << NEW
+app.use("/api", viewRoute);
+app.use("/api", commentRoute);
 
+// Default
 app.get("/", (req, res) => {
   res.send("Server is running...");
 });
 
+// Start Server
 app.listen(3000, () => {
   console.log("Server running on port 3000");
 });
