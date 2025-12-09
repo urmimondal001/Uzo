@@ -1,0 +1,51 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase init
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        status: false,
+        message: "Email and password are required",
+      });
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(401).json({
+        status: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Login successful",
+      user: data.user,
+      session: data.session,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+});
+
+export default router;
