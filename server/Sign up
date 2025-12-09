@@ -1,0 +1,61 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase init
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// SIGN UP API
+router.post("/signup", async (req, res) => {
+  try {
+    const { email, password, confirmPassword } = req.body;
+
+    // Basic validation
+    if (!email || !password || !confirmPassword) {
+      return res.status(400).json({
+        status: false,
+        message: "All fields are required",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        status: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    // Supabase sign up
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.message,
+      });
+    }
+
+    // Success
+    return res.status(200).json({
+      status: true,
+      message: "Signup successful",
+      user: data.user,
+    });
+
+  } catch (e) {
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+      error: e.message,
+    });
+  }
+});
+
+export default router;
