@@ -10,7 +10,8 @@ import viewRoute from "./routes/view-reel.js";
 import commentRoute from "./routes/comment-reel.js";
 import deleteReelRoute from "./routes/delete-reel.js";
 import followRoute from "./routes/follow.js";
-import shareReelRoute from "./routes/share-reel.js"; // <-- New
+import shareReelRoute from "./routes/share-reel.js";
+import uploadReelRoute from "./routes/upload-reel.js"; // <-- New
 
 const app = express();
 
@@ -27,7 +28,8 @@ app.use("/api", viewRoute);
 app.use("/api", commentRoute);
 app.use("/api", deleteReelRoute);
 app.use("/api", followRoute);
-app.use("/api", shareReelRoute); // <-- New
+app.use("/api", shareReelRoute);
+app.use("/api", uploadReelRoute); // <-- New
 
 // Default
 app.get("/", (req, res) => {
