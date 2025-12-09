@@ -1,0 +1,42 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase Config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL_HERE",
+  "YOUR_SUPABASE_ANON_KEY_HERE"
+);
+
+// ----------------------------
+// UPLOAD REEL
+// ----------------------------
+router.post("/upload", async (req, res) => {
+  try {
+    const { posted_by, video_url } = req.body;
+
+    if (!posted_by || !video_url) {
+      return res.status(400).json({ status: false, message: "posted_by and video_url are required" });
+    }
+
+    // Insert new reel
+    const { data, error } = await supabase.from("reels").insert([
+      {
+        posted_by,
+        video_url,
+        likes: 0,
+        views: 0,
+        created_at: new Date()
+      }
+    ]).select();
+
+    if (error) return res.status(400).json({ status: false, message: error.message });
+
+    res.json({ status: true, message: "Reel uploaded successfully", reel: data[0] });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error", error: err.message });
+  }
+});
+
+export default router;
