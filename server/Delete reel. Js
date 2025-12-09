@@ -1,0 +1,55 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase Config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL_HERE",
+  "YOUR_SUPABASE_ANON_KEY_HERE"
+);
+
+// DELETE REEL
+router.delete("/reel/:reel_id", async (req, res) => {
+  try {
+    const { reel_id } = req.params;
+    const { user_id } = req.body; // who wants to delete
+
+    if (!user_id || !reel_id) {
+      return res.status(400).json({ status: false, message: "user_id and reel_id required" });
+    }
+
+    // Check ownership
+    const { data: reel, error: reelError } = await supabase
+      .from("reels")
+      .select("*")
+      .eq("id", reel_id)
+      .single();
+
+    if (reelError) return res.status(400).json({ status: false, message: reelError.message });
+
+    if (reel.posted_by !== user_id) {
+      return res.status(403).json({ status: false, message: "You cannot delete this reel" });
+    }
+
+    // Delete related likes
+    await supabase.from("likes").delete().eq("reel_id", reel_id);
+
+    // Delete related views
+    await supabase.from("views").delete().eq("reel_id", reel_id);
+
+    // Delete related comments
+    await supabase.from("comments").delete().eq("reel_id", reel_id);
+
+    // Delete reel itself
+    const { error } = await supabase.from("reels").delete().eq("id", reel_id);
+    if (error) return res.status(400).json({ status: false, message: error.message });
+
+    res.json({ status: true, message: "Reel deleted successfully" });
+
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error", error: err.message });
+  }
+});
+
+export default router;
