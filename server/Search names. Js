@@ -1,0 +1,73 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+SEARCH USERS BY NAME
+/api/search/users?q=name
+================================
+*/
+router.get("/search/users", async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q) {
+      return res.json({ status: true, users: [] });
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, name, username, profile_pic")
+      .ilike("name", `%${q}%`)
+      .limit(20);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({ status: true, users: data });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+/*
+================================
+SEARCH REELS BY CAPTION / TEXT
+/api/search/reels?q=text
+================================
+*/
+router.get("/search/reels", async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q) {
+      return res.json({ status: true, reels: [] });
+    }
+
+    const { data, error } = await supabase
+      .from("reels")
+      .select("id, video_url, caption, posted_by, likes, views, created_at")
+      .ilike("caption", `%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({ status: true, reels: data });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+export default router;
