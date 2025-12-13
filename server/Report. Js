@@ -1,0 +1,56 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+REPORT CONTENT
+POST /api/report
+================================
+*/
+router.post("/report", async (req, res) => {
+  try {
+    const {
+      reporter_id,
+      target_type,   // reel | comment | user
+      target_id,
+      reason
+    } = req.body;
+
+    if (!reporter_id || !target_type || !target_id || !reason) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Missing data" });
+    }
+
+    const { error } = await supabase.from("reports").insert([
+      {
+        reporter_id,
+        target_type,
+        target_id,
+        reason,
+        status: "pending"
+      }
+    ]);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({
+      status: true,
+      message: "Report submitted successfully"
+    });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+export default router;
