@@ -1,0 +1,54 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+FETCH COMMENTS BY REEL
+GET /api/fetch-comments/:reel_id
+================================
+*/
+router.get("/fetch-comments/:reel_id", async (req, res) => {
+  try {
+    const { reel_id } = req.params;
+
+    if (!reel_id) {
+      return res.status(400).json({
+        status: false,
+        message: "Reel id required"
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("reel_comments")
+      .select("id, user_id, comment, created_at")
+      .eq("reel_id", reel_id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    res.json({
+      status: true,
+      comments: data
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Server error"
+    });
+  }
+});
+
+export default router;
