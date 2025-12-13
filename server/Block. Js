@@ -1,0 +1,75 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+BLOCK USER (ONLY)
+POST /api/block-user
+================================
+*/
+router.post("/block-user", async (req, res) => {
+  try {
+    const { user_id, blocked_user_id } = req.body;
+
+    if (!user_id || !blocked_user_id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Missing data" });
+    }
+
+    if (user_id === blocked_user_id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Cannot block yourself" });
+    }
+
+    // Check already blocked
+    const { data } = await supabase
+      .from("blocked_users")
+      .select("id")
+      .eq("user_id", user_id)
+      .eq("blocked_user_id", blocked_user_id)
+      .single();
+
+    if (data) {
+      return res.json({
+        status: true,
+        message: "User already blocked"
+      });
+    }
+
+    const { error } = await supabase.from("blocked_users").insert([
+      {
+        user_id,
+        blocked_user_id
+      }
+    ]);
+
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    res.json({
+      status: true,
+      message: "User blocked successfully"
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Server error"
+    });
+  }
+});
+
+export default router;
