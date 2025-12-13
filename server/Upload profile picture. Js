@@ -1,0 +1,99 @@
+import express from "express";
+import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+// R2 / S3 Config
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: "YOUR_R2_ENDPOINT",
+  credentials: {
+    accessKeyId: "YOUR_R2_ACCESS_KEY",
+    secretAccessKey: "YOUR_R2_SECRET_KEY"
+  }
+});
+
+// Multer (memory)
+const upload = multer({
+  limits: { fileSize: 5 * 1024 * 1024 } // max 5MB
+});
+
+/*
+================================
+UPLOAD PROFILE PICTURE
+POST /api/upload-profile-pic
+================================
+*/
+router.post(
+  "/upload-profile-pic",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const { user_id } = req.body;
+
+      if (!user_id || !req.file) {
+        return res.status(400).json({
+          status: false,
+          message: "Missing data"
+        });
+      }
+
+      // Only image check
+      if (!req.file.mimetype.startsWith("image/")) {
+        return res.status(400).json({
+          status: false,
+          message: "Only image files allowed"
+        });
+      }
+
+      const fileExt = req.file.originalname.split(".").pop();
+      const fileName = `profile/${user_id}_${uuidv4()}.${fileExt}`;
+
+      // Upload to R2
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: "YOUR_BUCKET_NAME",
+          Key: fileName,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype
+        })
+      );
+
+      const imageUrl = `YOUR_PUBLIC_R2_URL/${fileName}`;
+
+      // Save image URL in users table
+      const { error } = await supabase
+        .from("users")
+        .update({ profile_pic: imageUrl })
+        .eq("id", user_id);
+
+      if (error) {
+        return res.status(400).json({
+          status: false,
+          message: error.message
+        });
+      }
+
+      res.json({
+        status: true,
+        profile_pic: imageUrl
+      });
+    } catch (err) {
+      res.status(500).json({
+        status: false,
+        message: "Server error"
+      });
+    }
+  }
+);
+
+export default router;
