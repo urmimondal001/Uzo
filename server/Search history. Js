@@ -1,0 +1,123 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+SAVE SEARCH HISTORY
+POST /api/search-history
+body: { user_id, keyword }
+================================
+*/
+router.post("/search-history", async (req, res) => {
+  try {
+    const { user_id, keyword } = req.body;
+
+    if (!user_id || !keyword) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Missing data" });
+    }
+
+    const { error } = await supabase.from("search_history").insert([
+      {
+        user_id,
+        keyword
+      }
+    ]);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({ status: true, message: "Search saved" });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+/*
+================================
+GET SEARCH HISTORY (USER)
+GET /api/search-history/:user_id
+================================
+*/
+router.get("/search-history/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const { data, error } = await supabase
+      .from("search_history")
+      .select("id, keyword, created_at")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({ status: true, history: data });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+/*
+================================
+DELETE SINGLE SEARCH HISTORY
+DELETE /api/search-history/:id
+================================
+*/
+router.delete("/search-history/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from("search_history")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({ status: true, message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+/*
+================================
+CLEAR ALL SEARCH HISTORY (USER)
+DELETE /api/search-history-clear/:user_id
+================================
+*/
+router.delete("/search-history-clear/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const { error } = await supabase
+      .from("search_history")
+      .delete()
+      .eq("user_id", user_id);
+
+    if (error) {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+
+    res.json({ status: true, message: "All history cleared" });
+  } catch (err) {
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+export default router;
