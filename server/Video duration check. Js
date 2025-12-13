@@ -1,0 +1,62 @@
+import express from "express";
+import multer from "multer";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+const router = express.Router();
+
+// multer temp storage
+const upload = multer({ dest: "uploads/" });
+
+/*
+================================
+UPLOAD REEL (MAX 30 SECONDS)
+POST /api/upload-reel
+================================
+*/
+router.post("/upload-reel", upload.single("video"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: false,
+        message: "No video uploaded"
+      });
+    }
+
+    const videoPath = req.file.path;
+
+    // Check video duration
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) {
+        return res.status(500).json({
+          status: false,
+          message: "Video processing error"
+        });
+      }
+
+      const duration = metadata.format.duration;
+
+      if (duration > 30) {
+        return res.status(400).json({
+          status: false,
+          message: "Video must be 30 seconds or less"
+        });
+      }
+
+      // ✅ VIDEO OK (30s or less)
+      res.json({
+        status: true,
+        message: "Video accepted (<=30s)"
+      });
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Server error"
+    });
+  }
+});
+
+export default router;
