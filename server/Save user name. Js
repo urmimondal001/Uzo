@@ -1,0 +1,67 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+
+const router = express.Router();
+
+// Supabase config
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+SAVE FULL NAME (ONLY ONCE)
+POST /api/save-fullname
+================================
+*/
+router.post("/save-fullname", async (req, res) => {
+  try {
+    const { user_id, full_name } = req.body;
+
+    if (!user_id || !full_name) {
+      return res.status(400).json({
+        status: false,
+        message: "Missing data"
+      });
+    }
+
+    // Check already saved or not
+    const { data: existing } = await supabase
+      .from("users")
+      .select("full_name")
+      .eq("id", user_id)
+      .single();
+
+    if (existing?.full_name) {
+      return res.status(400).json({
+        status: false,
+        message: "Full name already saved"
+      });
+    }
+
+    const { error } = await supabase
+      .from("users")
+      .update({ full_name })
+      .eq("id", user_id);
+
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    res.json({
+      status: true,
+      message: "Full name saved successfully"
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Server error"
+    });
+  }
+});
+
+export default router;
