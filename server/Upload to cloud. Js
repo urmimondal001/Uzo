@@ -1,0 +1,77 @@
+import express from "express";
+import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+const router = express.Router();
+
+// R2 / S3 Client
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: "YOUR_R2_ENDPOINT",
+  credentials: {
+    accessKeyId: "YOUR_R2_ACCESS_KEY",
+    secretAccessKey: "YOUR_R2_SECRET_KEY"
+  }
+});
+
+// Multer (memory storage)
+const upload = multer({
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB max
+});
+
+/*
+================================
+UPLOAD VIDEO TO CLOUD
+POST /api/upload-cloud
+================================
+*/
+router.post(
+  "/upload-cloud",
+  upload.single("video"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          status: false,
+          message: "No video file"
+        });
+      }
+
+      // Allow only video
+      if (!req.file.mimetype.startsWith("video/")) {
+        return res.status(400).json({
+          status: false,
+          message: "Only video files allowed"
+        });
+      }
+
+      const ext = req.file.originalname.split(".").pop();
+      const fileName = `reels/${uuidv4()}.${ext}`;
+
+      // Upload to cloud
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: "YOUR_BUCKET_NAME",
+          Key: fileName,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype
+        })
+      );
+
+      const videoUrl = `YOUR_PUBLIC_R2_URL/${fileName}`;
+
+      res.json({
+        status: true,
+        video_url: videoUrl
+      });
+    } catch (err) {
+      res.status(500).json({
+        status: false,
+        message: "Upload failed"
+      });
+    }
+  }
+);
+
+export default router;
