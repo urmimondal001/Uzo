@@ -1,0 +1,62 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+import { v4 as uuidv4 } from "uuid";
+
+const router = express.Router();
+
+// Supabase
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+SAVE REEL INFO
+POST /api/save-reel
+================================
+*/
+router.post("/save-reel", async (req, res) => {
+  try {
+    const { user_id, video_url, caption } = req.body;
+
+    if (!user_id || !video_url) {
+      return res.status(400).json({
+        status: false,
+        message: "Missing data"
+      });
+    }
+
+    const reel_id = uuidv4();
+
+    const { error } = await supabase.from("reels").insert([
+      {
+        reel_id,
+        user_id,
+        video_url,
+        caption: caption || "",
+        likes: 0,
+        views: 0
+      }
+    ]);
+
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    res.json({
+      status: true,
+      reel_id: reel_id
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Server error"
+    });
+  }
+});
+
+export default router;
