@@ -1,0 +1,60 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+import { v4 as uuidv4 } from "uuid";
+
+const router = express.Router();
+
+// Supabase
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+/*
+================================
+ADD COMMENT
+POST /api/add-comment
+================================
+*/
+router.post("/add-comment", async (req, res) => {
+  try {
+    const { reel_id, user_id, comment } = req.body;
+
+    if (!reel_id || !user_id || !comment) {
+      return res.status(400).json({
+        status: false,
+        message: "Missing data"
+      });
+    }
+
+    const { error } = await supabase
+      .from("reel_comments")
+      .insert([
+        {
+          id: uuidv4(),
+          reel_id,
+          user_id,
+          comment
+        }
+      ]);
+
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.message
+      });
+    }
+
+    res.json({
+      status: true,
+      message: "Comment added"
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: false,
+      message: "Server error"
+    });
+  }
+});
+
+export default router;
